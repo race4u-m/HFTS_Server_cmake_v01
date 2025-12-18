@@ -1,0 +1,22 @@
+# build output
+out/
+build/
+
+# Visual Studio
+.vs/
+
+# CMake generated
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+
+# Windows build artifacts
+*.exe
+*.dll
+*.lib
+*.pdb
+*.obj
+
+# OS
+.DS_Store
+Thumbs.db
