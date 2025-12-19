@@ -5,10 +5,6 @@
 class tpMeasParser
 {
 public:
-    // JSON payload ¡æ tpMeas
-    static bool TryParseJson(
-        const std::string& payload,
-        tpMeas& out,
-        std::string& err
-    );
+    // payload(JSON ¹®ÀÚ¿­) -> TpMeas ÆÄ½Ì
+    static bool parse(const std::string& payload, TpMeas& out, std::string& err);
 };

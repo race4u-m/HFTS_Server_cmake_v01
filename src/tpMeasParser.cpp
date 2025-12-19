@@ -3,63 +3,83 @@
 
 using json = nlohmann::json;
 
-static bool RequireField(const json& j, const char* key)
-{
-    return j.contains(key) && !j.at(key).is_null();
-}
-
-bool tpMeasParser::TryParseJson(
-    const std::string& payload,
-    tpMeas& out,
-    std::string& err
-)
+static bool toInt64Safe(const json& j, int64_t& out)
 {
     try
     {
-        auto j = json::parse(payload);
+        if (j.is_number_integer()) { out = j.get<int64_t>(); return true; }
+        if (j.is_number_unsigned()) { out = static_cast<int64_t>(j.get<uint64_t>()); return true; }
+        if (j.is_number_float()) { out = static_cast<int64_t>(j.get<double>()); return true; }
+        if (j.is_string()) { out = std::stoll(j.get<std::string>()); return true; }
+    }
+    catch (...) {}
+    return false;
+}
 
-        // 필수 필드
-        if (!RequireField(j, "DataNo") || !RequireField(j, "SecFrom1900"))
-        {
-            err = "Missing required field: DataNo or SecFrom1900";
-            return false;
-        }
+static bool toDoubleSafe(const json& j, double& out)
+{
+    try
+    {
+        if (j.is_number()) { out = j.get<double>(); return true; }
+        if (j.is_string()) { out = std::stod(j.get<std::string>()); return true; }
+    }
+    catch (...) {}
+    return false;
+}
 
-        out.DataNo = j.value("DataNo", 0LL);
-        out.SecFrom1900 = j.value("SecFrom1900", 0.0);
+bool tpMeasParser::parse(const std::string& payload, TpMeas& out, std::string& err)
+{
+    out = TpMeas{};
+    err.clear();
 
-        out.P_N2 = j.value("P_N2", 0.0);
-        out.T_Line1 = j.value("T_Line1", 0.0);
-        out.T_Line2 = j.value("T_Line2", 0.0);
-        out.P_Line1 = j.value("P_Line1", 0.0);
-        out.P_Line2 = j.value("P_Line2", 0.0);
-        out.H_Atm = j.value("H_Atm", 0.0);
-        out.T_Atm = j.value("T_Atm", 0.0);
-
-        out.T_Tank1 = j.value("T_Tank1", 0.0);
-        out.T_Tank2 = j.value("T_Tank2", 0.0);
-        out.T_Tank3 = j.value("T_Tank3", 0.0);
-
-        out.H2D_1 = j.value("H2D_1", 0.0);
-        out.H2D_2 = j.value("H2D_2", 0.0);
-        out.IRF_1 = j.value("IRF_1", 0.0);
-        out.IRF_2 = j.value("IRF_2", 0.0);
-
-        out.Weight = j.value("Weight", 0.0);
-        out.Q_Ins = j.value("Q_Ins", 0.0);
-        out.Q_Tot = j.value("Q_Tot", 0.0);
-
-        out.DIO = j.value("DIO", 0LL);
-        out.Tare_Q_Tot = j.value("Tare_Q_Tot", 0.0);
-        out.Tare_Weight = j.value("Tare_Weight", 0.0);
-        out.DP = j.value("DP", 0.0);
-
-        err.clear();
-        return true;
+    json j;
+    try
+    {
+        j = json::parse(payload);
     }
     catch (const std::exception& e)
     {
-        err = e.what();
+        err = std::string("JSON parse failed: ") + e.what();
         return false;
     }
+
+    // ver는 이번 설계에서 제외(있어도 무시)
+    // DTNO 사용
+    if (!j.contains("DTNO"))
+    {
+        err = "Missing field: DTNO";
+        return false;
+    }
+    if (!toInt64Safe(j["DTNO"], out.DTNO))
+    {
+        err = "DTNO type invalid";
+        return false;
+    }
+
+    // v : 22개 배열
+    if (!j.contains("v") || !j["v"].is_array())
+    {
+        err = "Missing or invalid field: v (must be array)";
+        return false;
+    }
+
+    const auto& a = j["v"];
+    if (a.size() != TP_V_COUNT)
+    {
+        err = "v array size must be 22";
+        return false;
+    }
+
+    for (int i = 0; i < TP_V_COUNT; ++i)
+    {
+        double val = 0.0;
+        if (!toDoubleSafe(a[i], val))
+        {
+            err = "v[" + std::to_string(i) + "] invalid";
+            return false;
+        }
+        out.v[i] = val;
+    }
+
+    return true;
 }

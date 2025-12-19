@@ -1,32 +1,39 @@
 #pragma once
+
 #include <functional>
 #include <string>
-#include <mqtt/async_client.h>
 
 class MqttClient
 {
 public:
-    using MessageHandler =
-        std::function<void(const std::string&, const std::string&)>;
-
-    MqttClient(std::string serverUri, std::string clientId);
-    void SetMessageHandler(MessageHandler cb);
-
-    void ConnectAndSubscribe(const std::string& topicFilter, int qos = 1);
-    void Disconnect();
-
-private:
-    mqtt::async_client cli_;
-    MessageHandler onMsg_;
-
-    class Callback : public virtual mqtt::callback
+    struct Config
     {
-    public:
-        explicit Callback(MqttClient& parent) : parent_(parent) {}
-        void message_arrived(mqtt::const_message_ptr msg) override;
-    private:
-        MqttClient& parent_;
+        std::string serverUri;   // 예: tcp://127.0.0.1:1883
+        std::string clientId;    // 예: HFTS_Server
+        std::string topic;       // 예: HFTS/tpmeas
+        int qos = 1;
+        bool cleanSession = true;
     };
 
-    Callback cb_;
+    using OnMessage = std::function<void(const std::string& topic,
+        const std::string& payload)>;
+
+    explicit MqttClient(Config cfg);
+    ~MqttClient();
+
+    void setOnMessage(OnMessage cb);
+
+    // cpp에서 사용 중이라 반드시 있어야 함
+    const Config& config() const { return cfg_; }
+    const OnMessage& onMessage() const { return onMsg_; }
+
+    bool start(std::string& err);
+
+    // cpp 최신 버전과 동일하게 인자 없는 stop()
+    void stop();
+
+private:
+    Config cfg_;
+    OnMessage onMsg_;
+    void* impl_ = nullptr;  // PIMPL (MqttImpl*)
 };

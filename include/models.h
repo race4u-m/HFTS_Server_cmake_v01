@@ -1,34 +1,20 @@
 #pragma once
+#include <array>
 #include <cstdint>
 
-struct tpMeas
+constexpr int TP_V_COUNT = 22;
+
+// MQTT에서 받은 측정 데이터(파싱 결과)
+struct TpMeas
 {
-    std::int64_t DataNo = 0;
-    double SecFrom1900 = 0.0;
+    int64_t DTNO = 0;                          // 데이터 번호(추천 키)
+    std::array<double, TP_V_COUNT> v{};        // 22개 값 고정
+};
 
-    double P_N2 = 0.0;
-    double T_Line1 = 0.0;
-    double T_Line2 = 0.0;
-    double P_Line1 = 0.0;
-    double P_Line2 = 0.0;
-    double H_Atm = 0.0;
-    double T_Atm = 0.0;
-
-    double T_Tank1 = 0.0;
-    double T_Tank2 = 0.0;
-    double T_Tank3 = 0.0;
-
-    double H2D_1 = 0.0;
-    double H2D_2 = 0.0;
-    double IRF_1 = 0.0;
-    double IRF_2 = 0.0;
-
-    double Weight = 0.0;
-    double Q_Ins = 0.0;
-    double Q_Tot = 0.0;
-
-    std::int64_t DIO = 0;
-    double Tare_Q_Tot = 0.0;
-    double Tare_Weight = 0.0;
-    double DP = 0.0;
+// DB에 넣을 레코드(저장용)
+struct TpMeasDbRow
+{
+    double ts = 0.0;                           // 서버 수신 시각 (Unix time, seconds)
+    int64_t DTNO = 0;
+    std::array<double, TP_V_COUNT> v{};
 };

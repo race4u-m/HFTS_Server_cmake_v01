@@ -15,6 +15,7 @@ add_executable(HFTS_Server_cmake_v01
     src/main.cpp
     src/MqttClient.cpp
     src/tpMeasParser.cpp
+    src/DbWriter.cpp
 )
 
 # ===============================
@@ -31,6 +32,8 @@ target_include_directories(HFTS_Server_cmake_v01
 find_package(nlohmann_json CONFIG REQUIRED)
 find_package(PahoMqttCpp CONFIG REQUIRED)
 #find_package(PahoMqttC   CONFIG REQUIRED)
+#find_package(sqlite3 CONFIG REQUIRED)
+find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
 # ===============================
 # 링크
@@ -39,6 +42,7 @@ target_link_libraries(HFTS_Server_cmake_v01
     PRIVATE
         PahoMqttCpp::paho-mqttpp3 
         nlohmann_json::nlohmann_json
+        unofficial::sqlite3::sqlite3
 )
 
 #target_compile_definitions(HFTS_Server_cmake_v01 PRIVATE PAHO_MQTTPP_IMPORTS)
