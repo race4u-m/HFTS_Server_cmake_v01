@@ -27,20 +27,19 @@ target_include_directories(HFTS_Server_cmake_v01
 )
 
 # ===============================
-# 공통: JSON (Windows(vcpkg) / Linux(apt) 모두 가능)
+# JSON (공통)
+# - Windows(vcpkg)에서도, Linux(apt)에서도 nlohmann_json config가 보통 잡힘
 # ===============================
-# - Windows(vcpkg): nlohmann_json CONFIG
-# - Linux(apt):     보통 CMake config 제공
 find_package(nlohmann_json CONFIG REQUIRED)
 target_link_libraries(HFTS_Server_cmake_v01 PRIVATE nlohmann_json::nlohmann_json)
 
 # ===============================
-# OS별: MQTT(Paho) / SQLite 링크 방식 분기
+# OS별: MQTT(Paho) / SQLite 링크
 # ===============================
 if (WIN32)
-    # --------------------------------
-    # Windows: vcpkg 패키지 사용
-    # --------------------------------
+    # --------------------------------------------------
+    # Windows: vcpkg 패키지 사용 (네가 윈도우에서 성공한 방식)
+    # --------------------------------------------------
     find_package(PahoMqttCpp CONFIG REQUIRED)
     find_package(unofficial-sqlite3 CONFIG REQUIRED)
 
@@ -50,26 +49,25 @@ if (WIN32)
             unofficial::sqlite3::sqlite3
     )
 
-    # Windows에서 DLL import 매크로 필요(네 코드와 동일)
+    # Windows DLL import 매크로 (네 기존 코드 유지)
     target_compile_definitions(HFTS_Server_cmake_v01 PRIVATE PAHO_MQTTPP_IMPORTS)
 
 else()
-    # --------------------------------
-    # Linux: apt 패키지 사용 (가장 안정)
-    # --------------------------------
-    # SQLite3
+    # --------------------------------------------------
+    # Linux: apt 설치 기준 (어제 리눅스에서 되던 스타일로 "가장 단순/안정")
+    # --------------------------------------------------
+
+    # SQLite3 (apt)
     find_package(SQLite3 REQUIRED)
     target_link_libraries(HFTS_Server_cmake_v01 PRIVATE SQLite::SQLite3)
 
-    # Paho MQTT: pkg-config로 찾기
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(PAHO_MQTTPP REQUIRED IMPORTED_TARGET paho-mqttpp3)
-
-    # paho-mqttpp3 (C++ wrapper)
-    target_link_libraries(HFTS_Server_cmake_v01 PRIVATE PkgConfig::PAHO_MQTTPP)
-
-    # async_client가 필요로 하는 C 라이브러리(ssl 버전)
-    # 대부분 자동으로 잡히지만, 환경에 따라 명시하면 더 안전
-    target_link_libraries(HFTS_Server_cmake_v01 PRIVATE paho-mqtt3as)
+    # Paho MQTT (apt)
+    # Ubuntu에선 PahoMqttCppConfig.cmake가 없을 수 있어서 find_package(PahoMqttCpp) 쓰지 않음
+    # 라이브러리를 직접 링크하는 방식이 가장 안정적
+    target_link_libraries(HFTS_Server_cmake_v01
+        PRIVATE
+            paho-mqttpp3
+            paho-mqtt3as
+    )
 
 endif()
